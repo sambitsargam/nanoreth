@@ -376,9 +376,13 @@ impl<B: reth_primitives_traits::Block> fmt::Display for DisplayBlocksChain<'_, B
         if values.len() <= 3 {
             list.entries(values);
         } else {
-            list.entry(&values.next().unwrap());
-            list.entry(&format_args!("..."));
-            list.entry(&values.next_back().unwrap());
+            if let Some(first) = values.next() {
+                list.entry(&first);
+                list.entry(&format_args!("..."));
+                if let Some(last) = values.next_back() {
+                    list.entry(&last);
+                }
+            }
         }
         list.finish()
     }

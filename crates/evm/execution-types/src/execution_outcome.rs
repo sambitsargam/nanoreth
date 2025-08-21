@@ -297,12 +297,27 @@ impl<T> ExecutionOutcome<T> {
             return (None, self)
         }
 
+        // Need to check preconditions before moving self
+        if at == 0 {
+            // If trying to split at block 0, we can't revert to a previous block
+            // This is likely a programming error, but let's handle it gracefully
+            return (None, self);
+        }
+        
+        // Check if the block number is in range before proceeding
+        if self.block_number_to_index(at).is_none() {
+            // Block number is not in the range, this violates the function's precondition
+            // but we should handle it gracefully rather than panic
+            return (None, self);
+        }
+
         let (mut lower_state, mut higher_state) = (self.clone(), self);
 
         // Revert lower state to [..at].
-        lower_state.revert_to(at.checked_sub(1).unwrap());
+        lower_state.revert_to(at - 1);
 
         // Truncate higher state to [at..].
+        // We already checked this is valid above, so unwrap is safe here
         let at_idx = higher_state.block_number_to_index(at).unwrap();
         higher_state.receipts = higher_state.receipts.split_off(at_idx);
         // Ensure that there are enough requests to truncate.
