@@ -235,7 +235,7 @@ impl<T: NodePrimitives> PersistenceHandle<T> {
                     error!(target: "engine::persistence", ?err, "Persistence service failed");
                 }
             })
-            .unwrap();
+            .expect("Failed to spawn persistence service thread");
 
         persistence_handle
     }
