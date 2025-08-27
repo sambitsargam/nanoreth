@@ -2278,7 +2278,9 @@ impl<TX: DbTxMut + DbTx + 'static, N: NodeTypesForProvider> StateWriter
             let mut block_receipts = Vec::with_capacity(block_body.tx_count as usize);
             for num in block_body.tx_num_range() {
                 if receipts_iter.peek().is_some_and(|(n, _)| *n == num) {
-                    block_receipts.push(receipts_iter.next().unwrap().1);
+                    if let Some((_, receipt)) = receipts_iter.next() {
+                        block_receipts.push(receipt);
+                    }
                 }
             }
             receipts.push(block_receipts);
@@ -3070,9 +3072,12 @@ impl<TX: DbTxMut + DbTx + 'static, N: NodeTypesForProvider + 'static> BlockWrite
             return Ok(());
         }
 
-        let first_number = blocks.first().unwrap().number();
+        let first_number = blocks.first()
+            .ok_or_else(|| ProviderError::other(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Blocks vector is unexpectedly empty")))?
+            .number();
 
-        let last = blocks.last().unwrap();
+        let last = blocks.last()
+            .ok_or_else(|| ProviderError::other(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Blocks vector is unexpectedly empty")))?;
         let last_block_number = last.number();
 
         let mut durations_recorder = metrics::DurationsRecorder::default();

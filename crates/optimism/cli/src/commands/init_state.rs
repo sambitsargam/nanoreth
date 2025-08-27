@@ -74,14 +74,17 @@ impl<C: ChainSpecParser<ChainSpec = OpChainSpec>> InitStateCommandOp<C> {
             }
         }
 
-        info!(target: "reth::cli", "Initiating state dump");
+        if let Some(state) = self.init_state.state {
+            info!(target: "reth::cli", "Initiating state dump");
+            let reader = BufReader::new(reth_fs_util::open(state)?);
+            let hash = init_from_state_dump(reader, &provider_rw, config.stages.etl)?;
+            provider_rw.commit()?;
 
-        let reader = BufReader::new(reth_fs_util::open(self.init_state.state)?);
-        let hash = init_from_state_dump(reader, &provider_rw, config.stages.etl)?;
-
-        provider_rw.commit()?;
-
-        info!(target: "reth::cli", hash = ?hash, "Genesis block written");
-        Ok(())
+            info!(target: "reth::cli", hash = ?hash, "Genesis block written");
+            Ok(())
+        } else {
+            provider_rw.commit()?;
+            Ok(())
+        }
     }
 }

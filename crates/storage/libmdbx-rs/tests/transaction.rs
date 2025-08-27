@@ -168,21 +168,21 @@ fn test_drop_db() {
         let env = Environment::builder().set_max_dbs(2).open(dir.path()).unwrap();
 
         {
-            let txn = env.begin_rw_txn().unwrap();
+            let txn = env.begin_rw_txn().expect("Failed to begin read-write transaction");
             txn.put(
-                txn.create_db(Some("test"), DatabaseFlags::empty()).unwrap().dbi(),
+                txn.create_db(Some("test"), DatabaseFlags::empty()).expect("Failed to create test database").dbi(),
                 b"key",
                 b"val",
                 WriteFlags::empty(),
             )
-            .unwrap();
+            .expect("Failed to put test data");
             // Workaround for MDBX dbi drop issue
-            txn.create_db(Some("canary"), DatabaseFlags::empty()).unwrap();
-            assert!(!txn.commit().unwrap().0);
+            txn.create_db(Some("canary"), DatabaseFlags::empty()).expect("Failed to create canary database");
+            assert!(!txn.commit().expect("Failed to commit transaction").0);
         }
         {
-            let txn = env.begin_rw_txn().unwrap();
-            let db = txn.open_db(Some("test")).unwrap();
+            let txn = env.begin_rw_txn().expect("Failed to begin read-write transaction");
+            let db = txn.open_db(Some("test")).expect("Failed to open test database");
             unsafe {
                 txn.drop_db(db).unwrap();
             }
